@@ -19,4 +19,5 @@ A simple Camel route using `ThrottlingExceptionRoutePolicy` with a Kafka consume
 
 * Judging from the logs, the consumer seeks back to the right offset but then the offset is
 overwritten. I suspect this happens because the consumer is committing the offset when it's paused. 
-* Switching to manual commits solves the issue
+* Switching to an implementation with manual offset commit (`-Dspring-boot.run.profiles=manual-commit`)
+  solves the issue

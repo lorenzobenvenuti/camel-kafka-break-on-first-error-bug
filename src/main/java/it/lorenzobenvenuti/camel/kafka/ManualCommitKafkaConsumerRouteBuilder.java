@@ -1,7 +1,10 @@
 package it.lorenzobenvenuti.camel.kafka;
 
 import java.util.List;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
 import org.apache.camel.throttling.ThrottlingExceptionRoutePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +13,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!manual-commit")
-public class KafkaConsumerRouteBuilder extends RouteBuilder {
+@Profile("manual-commit")
+public class ManualCommitKafkaConsumerRouteBuilder extends RouteBuilder {
 
     public static final String ROUTE_ID = "kafkaConsumer";
 
@@ -27,14 +30,17 @@ public class KafkaConsumerRouteBuilder extends RouteBuilder {
 
         onException(Exception.class)
                 .log("Another exception caught")
-                .handled(true);
+                .handled(true)
+                .process(this::commit);;
 
-        from("kafka:my-topic?groupId=my-group&breakOnFirstError=true")
+        from("kafka:my-topic?groupId=my-group&breakOnFirstError=true&" +
+                            "allowManualCommit=true&autoCommitEnable=false")
                 .routeId(ROUTE_ID)
                 .routePolicy(throttlingExceptionRoutePolicy())
                 .log("Received ${body}")
                 .process(exchange ->
-                        downstreamDependency.process(exchange.getIn().getBody(String.class)));
+                        downstreamDependency.process(exchange.getIn().getBody(String.class)))
+                .process(this::commit);
     }
 
     private ThrottlingExceptionRoutePolicy throttlingExceptionRoutePolicy() {
@@ -51,4 +57,15 @@ public class KafkaConsumerRouteBuilder extends RouteBuilder {
         });
         return routePolicy;
     }
+
+    private void commit(Exchange exchange) {
+        Boolean lastOne = exchange.getIn().getHeader(KafkaConstants.LAST_RECORD_BEFORE_COMMIT, Boolean.class);
+        if (lastOne) {
+            LOGGER.info("Committing offset {}", exchange.getIn().getHeader(KafkaConstants.OFFSET));
+            KafkaManualCommit manual =
+                    exchange.getIn().getHeader(KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+            manual.commit();
+        }
+    }
+
 }
