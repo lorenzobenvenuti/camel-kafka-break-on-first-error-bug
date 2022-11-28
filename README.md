@@ -1,6 +1,8 @@
 # camel-kafka-break-on-first-error-bug
 
-A simple Camel route using `ThrottlingExceptionRoutePolicy` with a Kafka consumer 
+A simple Camel route using `ThrottlingExceptionRoutePolicy` with a Kafka consumer, showing that the message that caused the circuit to be opened is lost.
+
+See [this issue](https://issues.apache.org/jira/browse/CAMEL-18760)
 
 ## How to reproduce the issue
 
