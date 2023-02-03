@@ -16,10 +16,13 @@ See [this issue](https://issues.apache.org/jira/browse/CAMEL-18760)
 **Expected result**: each message is consumed once
 
 **Actual result**: only the second message is consumed
-   
+
+Tested with 3.18.3, 3.20.1, 3.21.0-SNAPSHOT (on 2022-02-03 at 16:30 UTC)
+
 ## Notes
 
 * Judging from the logs, the consumer seeks back to the right offset but then the offset is
 overwritten. I suspect this happens because the consumer is committing the offset when it's paused. 
 * Switching to an implementation with manual offset commit (`-Dspring-boot.run.profiles=manual-commit`)
   solves the issue
+
